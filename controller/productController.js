@@ -2,9 +2,9 @@ import Product from "../model/productModel.js";
 
 export const addProduct = async (req, res) => {
     const userId = req.user.sub;
-    const { productName, productPrice, category } = req.body;
+    const { productName,originalPrice, productPrice, category } = req.body;
     try {
-        if (!productName || !productPrice || !category) {
+        if (!productName ||!originalPrice ||  !productPrice || !category) {
             return res.status(400).json({ message: "Product Name And Product Price Are Required" })
         }
         const exitstinProduct = await Product.findOne({
@@ -17,6 +17,7 @@ export const addProduct = async (req, res) => {
 
         const newProduct = new Product({
             productName,
+            originalPrice,
             productPrice,
             category,
             userId

@@ -1,4 +1,4 @@
-import { loginUser, createUser,allUser,deleteUser } from '../controller/userController.js'
+import { loginUser, createUser, allUser, deleteUser } from '../controller/userController.js'
 import express from 'express'
 
 const router = express.Router()
@@ -6,7 +6,7 @@ const router = express.Router()
 
 router.post('/create', createUser)
 router.post('/login', loginUser)
-router.get('/allUser',allUser)
-router.delete('/delete/:id',deleteUser)
+router.get('/allUser', allUser)
+router.delete('/delete/:id', deleteUser)
 
 export default router
