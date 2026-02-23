@@ -1,22 +1,23 @@
 import User from '../model/userModel.js'
 import bcrypt from 'bcrypt'
 import jwt from 'jsonwebtoken'
+import nodemailer from 'nodemailer'
 
 export const createUser = async (req, res) => {
-    const { name, password } = req.body;
+    const { email, password } = req.body;
     try {
-        if (!name && !password) {
-            return res.status(400).json({ message: "Name and Password are required" });
+        if (!email || !password) {
+            return res.status(400).json({ message: "email and Password are required" });
         }
         const existingUser = await User.findOne({
-            name: name
+            email: email
         });
         if (existingUser) {
             return res.status(400).json({ message: "User already exists" });
         }
         const hashedPassword = await bcrypt.hash(password, 10);
         const newUser = new User({
-            name: name,
+            email: email,
             password: hashedPassword
         });
         await newUser.save();
@@ -28,16 +29,16 @@ export const createUser = async (req, res) => {
 }
 
 export const loginUser = async (req, res) => {
-    const { name, password } = req.body;
+    const { email, password } = req.body;
 
     try {
-        if (!name || !password) {
+        if (!email || !password) {
             return res.status(400).json({
-                message: "Name and Password are required",
+                message: "Email and Password are required",
             });
         }
 
-        const existingUser = await User.findOne({ name });
+        const existingUser = await User.findOne({ email });
         if (!existingUser) {
             return res.status(400).json({
                 message: "User does not exist",
@@ -63,7 +64,7 @@ export const loginUser = async (req, res) => {
 
         const payload = {
             sub: existingUser._id,
-            username: existingUser.name,
+            username: existingUser.email,
             role: existingUser.role,
         };
 
@@ -72,10 +73,10 @@ export const loginUser = async (req, res) => {
         });
 
         return res.status(200).json({
-            data: name,
+            data: email,
             message: "User logged in successfully",
             token,
-            role:existingUser.role
+            role: existingUser.role
         });
     } catch (error) {
         return res.status(500).json({
@@ -134,4 +135,95 @@ export const deleteUser = async (req, res) => {
         });
     }
 };
+
+export const updatePassword = async (req, res) => {
+    const { email } = req.body
+    const user = await User.findOne({ email })
+
+    if (!user) {
+        return res.status(404).json({
+            message: "user not found",
+            status: false
+        })
+    }
+
+   const token = Math.floor(100000 + Math.random() * 900000).toString();
+
+    user.resetPasswordToken = token;
+    user.resetPasswordExpire = Date.now() + 3600000
+
+    await user.save()
+
+    const transporter = nodemailer.createTransport({
+        service: "gmail",
+        auth: {
+            user: "saravananvimal0608@gmail.com",
+            pass: "pagu eili flzd kmwh"
+        }
+    })
+
+    const message = {
+        from: "saravananvimal0608@gmail.com",
+        to: user.email,
+        subject: "Forgot Password",
+        text: `
+Hello ${user.email},
+
+We received a request to reset your password.
+
+Your One-Time Password (OTP) is:
+
+${token}
+
+This OTP is valid for 15 minutes.
+
+Please do not share this OTP with anyone for security reasons.
+
+If you did not request a password reset, please ignore this email.
+
+Thank you,
+Your App Team
+`
+    }
+
+    transporter.sendMail(message, (err, info) => {
+        if (err) {
+            return res.status(400).json({
+                message: "something went wrong"
+            })
+        }
+        return res.status(200).json({ message: "email sent to your mail id" })
+    })
+}
+
+
+export const resetPassword = async (req, res) => {
+    const { token } = req.params
+    const { password } = req.body
+
+    try {
+        const user = await User.findOne({
+            resetPasswordToken: token,
+            resetPasswordExpire: { $gt: Date.now() }
+        })
+
+        if (!user) {
+            return res.status(404).json({ message: "Invalid Otp" })
+        }
+        if (!password) {
+            return res.status(400).json({ message: 'Password Is Required' })
+        }
+        const hashedPassword = await bcrypt.hash(password, 10)
+
+        user.password = hashedPassword;
+        user.resetPasswordToken = null;
+        user.resetPasswordExpire = null;
+
+        await user.save();
+        return res.status(201).json({ message: "Password Changed Successfully" })
+    } catch (error) {
+        return res.status(500).json({ message: error.message, stack: error.stack })
+
+    }
+}
 

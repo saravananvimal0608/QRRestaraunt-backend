@@ -85,11 +85,9 @@ export const deleteCategory = async (req, res) => {
     try {
 
         const { id } = req.params;
-        const userId = req.user.sub;
 
         const category = await Category.findOne({
             _id: id,
-            userId
         });
 
         if (!category) {
@@ -101,7 +99,6 @@ export const deleteCategory = async (req, res) => {
 
         const existingProduct = await Product.findOne({
             category: id,
-            userId
         });
 
         if (existingProduct) {
@@ -128,12 +125,10 @@ export const updateCategory = async (req, res) => {
     try {
 
         const { id } = req.params;
-        const userId = req.user.sub;
         const { categoryName } = req.body;
 
         const existingCategory = await Category.findOne({
             categoryName,
-            userId,
             _id: { $ne: id }
         });
 
@@ -144,7 +139,7 @@ export const updateCategory = async (req, res) => {
         }
 
         const updatedCategory = await Category.findOneAndUpdate(
-            { _id: id, userId },
+            { _id: id },
             { categoryName },
             { new: true }
         );
@@ -173,11 +168,9 @@ export const getSingleCategory = async (req, res) => {
     try {
 
         const { id } = req.params;
-        const userId = req.user.sub;
 
         const category = await Category.findOne({
             _id: id,
-            userId
         });
 
         if (!category) {

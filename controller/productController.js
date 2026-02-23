@@ -39,8 +39,6 @@ export const addProduct = async (req, res) => {
 export const getAllProducts = async (req, res) => {
     try {
 
-        const userId = req.user.sub;
-
         const products = await Product
             .find()
             .populate("category");
@@ -57,11 +55,9 @@ export const getSingleProduct = async (req, res) => {
     try {
 
         const { id } = req.params;
-        const userId = req.user.sub;
 
         const product = await Product.findOne({
             _id: id,
-            userId
         }).populate("category");
 
         if (!product) {
