@@ -4,6 +4,7 @@ import jwt from 'jsonwebtoken'
 import { emailSend } from '../utils/emailSend.js'
 import Shop from '../model/shopModel.js'
 
+
 export const createAdmin = async (req, res) => {
 
     const { shopName, ownerName, mobileNumber, address, email, password } = req.body;
@@ -43,7 +44,7 @@ export const createAdmin = async (req, res) => {
     catch (error) {
         return res.status(500).json({ message: "Server error", error: error.message, stack: error.stack });
     }
-}
+};
 
 export const createSalesman = async (req, res) => {
     const { email, password } = req.body;
@@ -108,7 +109,7 @@ export const loginUser = async (req, res) => {
         const payload = {
             sub: existingUser._id,
             username: existingUser.email,
-            shopId: existingUser.shopId,
+            shopId: existingUser.shopId ? existingUser.shopId : "",
             role: existingUser.role
         };
 
@@ -208,7 +209,7 @@ export const updatePassword = async (req, res) => {
         return res.status(500).json({ message: error.message, stack: error.stack })
     }
 
-}
+};
 
 export const resetPassword = async (req, res) => {
     const { token } = req.params
@@ -238,5 +239,30 @@ export const resetPassword = async (req, res) => {
         return res.status(500).json({ message: error.message, stack: error.stack })
 
     }
-}
+};
+
+export const createSuperAdmin = async (req, res) => {
+    try {
+        const { email, password } = req.body
+
+
+        if (!email || !password) {
+            return res.status(400).json({ message: "Email And Password Are Required" })
+        }
+
+        const hashedPassword = await bcrypt.hash(password, 10)
+
+        const superAdmin = await User.create({
+            email,
+            password: hashedPassword,
+            role: "superadmin",
+        })
+
+        return res.status(201).json({ message: "Super Admin Created Successfully" })
+
+    } catch (error) {
+        return res.status(500).json({ message: error.message, stack: error.stack })
+
+    }
+};
 

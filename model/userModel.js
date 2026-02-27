@@ -12,7 +12,9 @@ const userSchema = new mongoose.Schema({
     shopId: {
         type: mongoose.Schema.Types.ObjectId,
         ref: "Shop",
-        required: true
+        required: function () {
+            return this.role !== "superadmin";
+        }
     },
     resetPasswordToken: {
         type: String,
