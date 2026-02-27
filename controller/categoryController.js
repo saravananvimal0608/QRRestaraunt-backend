@@ -3,7 +3,7 @@ import Product from "../model/productModel.js";
 
 export const addCategory = async (req, res) => {
 
-    const userId = req.user.sub
+    const shopId = req.user.shopId
     const { categoryName } = req.body;
 
     try {
@@ -11,7 +11,8 @@ export const addCategory = async (req, res) => {
             return res.status(400).json({ message: "Category Name Required" })
         }
         const exitstinCategory = await Category.findOne({
-            categoryName
+            categoryName,
+            shopId
         });
 
 
@@ -21,7 +22,7 @@ export const addCategory = async (req, res) => {
 
         const newCategory = new Category({
             categoryName,
-            userId
+            shopId
         });
 
         await newCategory.save();
@@ -40,7 +41,8 @@ export const addCategory = async (req, res) => {
 export const getAllCategories = async (req, res) => {
     try {
 
-        const categories = await Category.find();
+        const shopId = req.user.shopId
+        const categories = await Category.find({ shopId });
 
         return res.status(200).json(categories);
 
@@ -50,8 +52,6 @@ export const getAllCategories = async (req, res) => {
         });
     }
 };
-
-
 
 // export const getProductsByCategory = async (req, res) => {
 
@@ -83,11 +83,13 @@ export const getAllCategories = async (req, res) => {
 export const deleteCategory = async (req, res) => {
 
     try {
+        const shopId = req.user.shopId;
 
         const { id } = req.params;
 
         const category = await Category.findOne({
             _id: id,
+            shopId
         });
 
         if (!category) {
@@ -124,11 +126,13 @@ export const deleteCategory = async (req, res) => {
 export const updateCategory = async (req, res) => {
     try {
 
+        const shopId = req.user.shopId
         const { id } = req.params;
         const { categoryName } = req.body;
 
         const existingCategory = await Category.findOne({
             categoryName,
+            shopId,
             _id: { $ne: id }
         });
 
@@ -139,7 +143,7 @@ export const updateCategory = async (req, res) => {
         }
 
         const updatedCategory = await Category.findOneAndUpdate(
-            { _id: id },
+            { _id: id, shopId },
             { categoryName },
             { new: true }
         );
@@ -166,11 +170,12 @@ export const updateCategory = async (req, res) => {
 export const getSingleCategory = async (req, res) => {
 
     try {
-
+        const shopId = req.user.shopId
         const { id } = req.params;
 
         const category = await Category.findOne({
             _id: id,
+            shopId
         });
 
         if (!category) {

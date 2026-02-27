@@ -5,8 +5,9 @@ const categorySchema = new mongoose.Schema({
         type: String,
         required: true
     },
-    userId: {
+    shopId: {
         type: mongoose.Schema.Types.ObjectId,
+        ref: "Shop",
         required: true
     }
 }, { timestamps: true })

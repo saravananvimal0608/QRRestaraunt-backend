@@ -1,16 +1,17 @@
 import Product from "../model/productModel.js";
 
 export const addProduct = async (req, res) => {
-    const userId = req.user.sub;
-    console.log(req);
-    
-    const { productName, originalPrice, productPrice, category } = req.body;
+
+    const shopId = req.user.shopId
+
+    const { productName, productPrice, category } = req.body;
     try {
-        if (!productName || !originalPrice || !productPrice || !category) {
+        if (!productName || !productPrice || !category) {
             return res.status(400).json({ message: "Product Name And Product Price Are Required" })
         }
         const exitstinProduct = await Product.findOne({
-            productName
+            productName,
+            shopId
         });
 
         if (exitstinProduct) {
@@ -19,11 +20,9 @@ export const addProduct = async (req, res) => {
 
         const newProduct = new Product({
             productName,
-            originalPrice,
             productPrice,
             category,
-            userId,
-          image: req.file ? req.file.path : null
+            shopId
         });
 
         await newProduct.save();
@@ -42,12 +41,15 @@ export const addProduct = async (req, res) => {
 export const getAllProducts = async (req, res) => {
     try {
 
+        const shopId = req.user.shopId
+
         const products = await Product
-            .find()
+            .find({ shopId })
             .populate("category");
 
-            console.log(products);
-            
+        if (products.length === 0) {
+            return res.status(200).json({ message: "No products found" });
+        }
 
         return res.status(200).json(products);
 
@@ -56,21 +58,23 @@ export const getAllProducts = async (req, res) => {
     }
 };
 
-
 export const getSingleProduct = async (req, res) => {
     try {
+
+                const shopId = req.user.shopId
 
         const { id } = req.params;
 
         const product = await Product.findOne({
             _id: id,
+            shopId,
         }).populate("category");
 
         if (!product) {
             return res.status(404).json({ message: "Product not found" });
         }
 
-        return res.status(200).json(product);
+        return res.status(200).json({ message: "Product Fetched successfully", product });
 
     } catch (error) {
         return res.status(500).json({ message: "Server error" });
@@ -79,11 +83,12 @@ export const getSingleProduct = async (req, res) => {
 
 export const getProductsByCategory = async (req, res) => {
     try {
-
+        const shopId = req.user.shopId
         const { categoryId } = req.params;
 
         const products = await Product.find({
             category: categoryId,
+            shopId
         }).populate("category");
 
         if (products.length === 0) {
@@ -101,18 +106,17 @@ export const getProductsByCategory = async (req, res) => {
     }
 };
 
-
 export const updateProduct = async (req, res) => {
     try {
         const { id } = req.params;
-        const userId = req.user.sub;
+        const shopId = req.user.shopId
 
-        const { productName, originalPrice, productPrice, category } = req.body;
+
+        const { productName, productPrice, category } = req.body;
 
         const updateFields = {};
 
         if (productName) updateFields.productName = productName;
-        if (originalPrice) updateFields.originalPrice = originalPrice;
         if (productPrice) updateFields.productPrice = productPrice;
         if (category) updateFields.category = category;
 
@@ -120,8 +124,7 @@ export const updateProduct = async (req, res) => {
         if (productName) {
             const existingProduct = await Product.findOne({
                 productName,
-                userId,
-                _id: { $ne: id }
+                shopId
             });
 
             if (existingProduct) {
@@ -132,7 +135,7 @@ export const updateProduct = async (req, res) => {
         }
 
         const updatedProduct = await Product.findOneAndUpdate(
-            { _id: id, userId },
+            { _id: id, shopId },
             { $set: updateFields },
             { new: true }
         );
@@ -156,17 +159,16 @@ export const updateProduct = async (req, res) => {
     }
 };
 
-
-
 export const deleteProduct = async (req, res) => {
     try {
 
         const { id } = req.params;
-        const userId = req.user.sub;
+        const shopId = req.user.shopId;
+
 
         const deletedProduct = await Product.findOneAndDelete({
             _id: id,
-            userId
+            shopId
         });
 
         if (!deletedProduct) {

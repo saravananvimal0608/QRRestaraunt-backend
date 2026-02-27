@@ -1,34 +1,75 @@
 import User from '../model/userModel.js'
 import bcrypt from 'bcrypt'
 import jwt from 'jsonwebtoken'
-import { emailSend } from '../config/emailSend.js'
+import { emailSend } from '../utils/emailSend.js'
+import Shop from '../model/shopModel.js'
 
+export const createAdmin = async (req, res) => {
 
-
-export const createUser = async (req, res) => {
-    const { email, password } = req.body;
+    const { shopName, ownerName, mobileNumber, address, email, password } = req.body;
     try {
-        if (!email || !password) {
-            return res.status(400).json({ message: "email and Password are required" });
+        if (!shopName || !ownerName || !mobileNumber || !address || !email || !password) {
+            return res.status(400).json({ message: "All Field Are Required" });
         }
-        const existingUser = await User.findOne({
-            email: email
-        });
+
+        const existingUser = await User.findOne({ email });
         if (existingUser) {
-            return res.status(400).json({ message: "User already exists" });
+            return res.status(400).json({ message: "User Already Exists Try Different Email" });
         }
+
+        const expiryDate = new Date();
+        expiryDate.setDate(expiryDate.getDate() + 30);
+
+        // creating shop inside this user table for set a shopId in user Schema
+        const shop = await Shop.create({
+            shopName,
+            ownerName,
+            mobileNumber,
+            address,
+            subscriptionExpiry: expiryDate // 30 days
+        });
+
+
         const hashedPassword = await bcrypt.hash(password, 10);
         const newUser = new User({
             email: email,
-            password: hashedPassword
+            password: hashedPassword,
+            shopId: shop._id,
+            role: "admin"
         });
         await newUser.save();
-        return res.status(201).json({ message: "User created successfully" });
+        return res.status(201).json({ message: "Shop Registered successfully" });
     }
     catch (error) {
         return res.status(500).json({ message: "Server error", error: error.message, stack: error.stack });
     }
 }
+
+export const createSalesman = async (req, res) => {
+    const { email, password } = req.body;
+    const shopId = req.user.shopId
+
+    if (!email || !password) {
+        return res.status(400).json({ message: "Email And Password Are Required" })
+    }
+
+    const existingUser = await User.findOne({ email })
+
+    if (existingUser) {
+        return res.status(400).json({ message: "User Already Exists Try Different Email" })
+    }
+
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    const salesman = await User.create({
+        email,
+        password: hashedPassword,
+        shopId
+    });
+
+
+    return res.status(201).json({ message: "User Created Successfully" });
+};
 
 export const loginUser = async (req, res) => {
     const { email, password } = req.body;
@@ -42,8 +83,8 @@ export const loginUser = async (req, res) => {
 
         const existingUser = await User.findOne({ email });
         if (!existingUser) {
-            return res.status(400).json({
-                message: "User does not exist",
+            return res.status(404).json({
+                message: "User Not Found",
             });
         }
 
@@ -67,7 +108,8 @@ export const loginUser = async (req, res) => {
         const payload = {
             sub: existingUser._id,
             username: existingUser.email,
-            role: existingUser.role,
+            shopId: existingUser.shopId,
+            role: existingUser.role
         };
 
         const token = jwt.sign(payload, process.env.JWT_SECRET_KEY, {
@@ -89,7 +131,8 @@ export const loginUser = async (req, res) => {
 
 export const allUser = async (req, res) => {
     try {
-        const users = await User.find().select("-password");
+        const shopId = req.user.shopId
+        const users = await User.find({ shopId }).select("-password");
 
         return res.status(200).json({
             status: true,
@@ -107,6 +150,7 @@ export const allUser = async (req, res) => {
 
 export const deleteUser = async (req, res) => {
     try {
+        const shopId = req.user.shopId
         const { id } = req.params;
 
         if (!id) {
@@ -116,7 +160,7 @@ export const deleteUser = async (req, res) => {
             });
         }
 
-        const existingUser = await User.findByIdAndDelete(id);
+        const existingUser = await User.findByIdAndDelete({ _id: id, shopId });
 
         if (!existingUser) {
             return res.status(404).json({
@@ -139,6 +183,7 @@ export const deleteUser = async (req, res) => {
 };
 
 export const updatePassword = async (req, res) => {
+
     const { email } = req.body
     const user = await User.findOne({ email })
 
@@ -164,7 +209,6 @@ export const updatePassword = async (req, res) => {
     }
 
 }
-
 
 export const resetPassword = async (req, res) => {
     const { token } = req.params

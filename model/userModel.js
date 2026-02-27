@@ -9,6 +9,11 @@ const userSchema = new mongoose.Schema({
         type: String,
         required: true
     },
+    shopId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Shop",
+        required: true
+    },
     resetPasswordToken: {
         type: String,
     },
@@ -16,8 +21,9 @@ const userSchema = new mongoose.Schema({
         type: Date,
     },
     role: {
-        type: Boolean,
-        default: false
+        type: String,
+        default: "salesman",
+        required: true
     }
 })
 const User = mongoose.model('User', userSchema);

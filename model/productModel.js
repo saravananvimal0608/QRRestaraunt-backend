@@ -5,14 +5,6 @@ const productSchema = new mongoose.Schema({
         type: String,
         required: true
     },
-    originalPrice: {
-        type: Number,
-        required: true
-    },
-    image: {
-        type: String,
-        required: false
-    },
     productPrice: {
         type: Number,
         required: true
@@ -22,9 +14,9 @@ const productSchema = new mongoose.Schema({
         ref: "Category",
         required: true
     },
-    userId: {
+    shopId: {
         type: mongoose.Schema.Types.ObjectId,
-        ref: "User",
+        ref: "Shop",
         required: true
     }
 }, { timestamps: true })
